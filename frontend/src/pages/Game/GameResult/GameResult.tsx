@@ -58,10 +58,11 @@ export default function GameResult({ client, changeState }: GameResultProps) {
       userId: userId,
       roundId: roundId,
       nextRoundId: nextRoundId,
-      roomId: id,
+      roomId: id && parseInt(id),
       mention: mention,
     });
     client.send(`app/mention/${id}`, header, message);
+    console.log(message);
   };
 
   useEffect(() => {

@@ -82,7 +82,7 @@ export default function BattleField({ client, players }: BattleFieldProps) {
     if (userId && userId !== victimId) {
       const currentTime = new Date().toISOString();
       const message = JSON.stringify({
-        roomId: id,
+        roomId: id && parseInt(id),
         roundId: gameData.roundId,
         userId: userId,
         victimId: victimId,

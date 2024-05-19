@@ -56,6 +56,7 @@ export default function ChatBox({ mode, isShort, text }: ChatBoxProps) {
   );
   const [reset, setReset] = useState(false);
   const clientRef = useRef<CompatClient | null>(null);
+  const messageEndRef = useRef<HTMLDivElement | null>(null);
 
   let url: string;
   const { id } = useParams();
@@ -111,6 +112,7 @@ export default function ChatBox({ mode, isShort, text }: ChatBoxProps) {
 
   useEffect(() => {
     storage.setItem('chattingData', JSON.stringify(userChatting));
+    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userChatting]);
 
@@ -144,6 +146,7 @@ export default function ChatBox({ mode, isShort, text }: ChatBoxProps) {
             </ChatLine>
           );
         })}
+        <div ref={messageEndRef}></div>
       </ChatBlock>
       <FlexLayout gap='1rem'>
         <Input

@@ -49,7 +49,7 @@ type InputProps = {
   isRound?: boolean;
   disabled?: boolean;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleKeyDown?: () => void;
+  handleKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 };
 
 export default function Input({
@@ -63,9 +63,11 @@ export default function Input({
 }: InputProps) {
   const [inputValue, SetInputValue] = useState('');
 
-  const enterkey = (e: React.KeyboardEvent) => {
-    if (handleKeyDown && e.key === 'Enter') {
-      handleKeyDown();
+  const enterkey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing || e.key !== 'Enter') return;
+  
+    if (handleKeyDown) {
+      handleKeyDown(e);
     }
   };
 
