@@ -41,7 +41,6 @@ public class RoundController {
     @ApiErrorExamples({ErrorInfo.USER_NOT_EXIST, ErrorInfo.ROOM_NOT_EXIST, ErrorInfo.ROOM_NOT_HOST, ErrorInfo.ROUND_NOT_EXIST, ErrorInfo.ROOM_ALREADY_STARTED, ErrorInfo.ROOM_ALREADY_STARTED})
     @PostMapping("/start/{room-id}")
     public ResponseEntity<ApiResult<GameStartResponse>> startGame(@RequestBody GameStartRequest gameStartRequest, @PathVariable("room-id") Long roomId, @AuthUser Long userId) {
-        System.out.println("컨트롤러 입장");
         GameStartResponse gameStartResponse = roundFacade.startGame(gameStartRequest, roomId, userId);
         return ResponseEntity.ok(ApiUtils.success(gameStartResponse));
     }
