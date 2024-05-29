@@ -36,6 +36,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -51,6 +53,7 @@ public class RoundFacade {
     private final RedisUtil redisUtil;
     private final SocketUtil socketUtil;
     private final TimeUtil timeUtil;
+    private final Lock lock = new ReentrantLock();
 
     public GameStartResponse startGame(GameStartRequest gameStartRequest, Long roomId, Long userId) {
         User user = userService.findById(userId);
@@ -80,7 +83,9 @@ public class RoundFacade {
         return GameStartResponse.of(round.getId());
     }
 
+    @Transactional
     public int initializeGameStatuses(Long roomId, Round round) {
+        System.out.println("\n\n------PLAYER, RANK 초기화-----");
         Room room = roomService.findById(roomId);
         Map<String, RoomVO> map = redisUtil.getRoomUsersInfo(room.getId());
 
@@ -124,6 +129,8 @@ public class RoundFacade {
         BattleFeildInGameResponse battleFeildInGameResponse = new BattleFeildInGameResponse(false, p);
 
         playerService.savePlayers(players);
+
+        redisUtil.saveData("room:round", room.getId().toString(), round.getId());
         socketUtil.sendMessage("/games/" + room.getId().toString() + "/battle-field", battleFeildInGameResponse);
         return players.size();
     }
@@ -134,6 +141,7 @@ public class RoundFacade {
 
     @Transactional
     public void endRound(Long roomId, Long roundId) {
+        System.out.println("\n\n player업데이트 하는 메서드");
         Round round = roundService.findById(roundId);
         round.finish();
         roundService.save(round);
@@ -152,26 +160,25 @@ public class RoundFacade {
 
         for (ClickDTO attack : attacks) {
             Long murderId = attack.getUserId();
-            Long victimId = attack.getVictimId();
             Player murderPlayer = playerMap.get(murderId);
+            Long victimId = attack.getVictimId();
             Player victimPlayer = playerMap.get(victimId);
 
             if (victimPlayer == null && murderPlayer == null)
                 throw new BusinessException(ErrorInfo.PLAYER_NOT_FOUND);
 
             Long attackTime = attack.getNanoSec();
-
             long aliveTime = attackTime - startTime;
 
             victimPlayer.updateOnAttack(murderPlayer, Long.toString(aliveTime));
             playerService.save(victimPlayer);
         }
 
+
         updateRanks(room, playerMap);
 
         savePlayerLogs(roomId, roundId);
         clearRedis(roomId);
-        //checkAndEndGame(room, round);
     }
 
     @Transactional
@@ -211,7 +218,6 @@ public class RoundFacade {
             String murderColor = murderUser.getColor().getHexColor();
 
             User playerUser = userService.findById(player.getUser().getId());
-            String playerNickname = playerUser.getNickname();
 
             results.add(new ResultResponse(
                     player.getUser().getId(),
@@ -225,19 +231,26 @@ public class RoundFacade {
 
         }
 
-        if (round.getRoundNumber() < 3) {
-            socketUtil.sendMessage("/games/" + roomId + "/battle-field", new RoundEndResultResponse(true, round.getRoundNumber(), nextRoundId, results, null));
-            return;
+        List<FinalResultResponse> finals = null;
+        if (round3Id != null) {
+            finals = getFinalResult(round1Id, round2Id, round3Id);
+            finals.sort(Comparator.comparingInt(FinalResultResponse::getFinalRank).reversed());
         }
 
-
-        List<FinalResultResponse> finals = getFinalResult(round1Id, round2Id, round3Id);
-        finals.sort(Comparator.comparingInt(FinalResultResponse::getFinalRank).reversed());
-
-        socketUtil.sendMessage("/games/" + roomId + "/battle-field", new RoundEndResultResponse(true, round.getRoundNumber(), nextRoundId, results, finals));
+        System.out.println("RoundEndResultResponse반환");
+        socketUtil.sendMessage("/games/" + roomId + "/battle-field",
+                new RoundEndResultResponse(true,
+                        round.getRoundNumber(),
+                        nextRoundId,
+                        results,
+                        finals
+                )
+        );
     }
 
     private List<FinalResultResponse> getFinalResult(Long round1Id, Long round2Id, Long round3Id) {
+
+        System.out.println("3라운드라서 최종결과 추가");
 
         List<FinalResultResponse> finalResults = new ArrayList<>();
 
@@ -343,16 +356,6 @@ public class RoundFacade {
         redisUtil.deleteKey(firstKey + ":availableClicks");
     }
 
-    private void checkAndEndGame(Room room, Round round) {
-        boolean isSoloMode = room.getMode().toString().equals("SOLO");
-        boolean isTeamMode = room.getMode().toString().equals("TEAM");
-        boolean isFinalSoloRound = isSoloMode && round.getRoundNumber() == 3;
-
-        if (isFinalSoloRound || isTeamMode) {
-            endGame(room.getId());
-        }
-    }
-
     public void endGame(Long roomId) {
         Room room = roomService.findById(roomId);
         RoomInfo roomInfo = redisUtil.getLobbyRoomInfo(room.getId());
@@ -396,18 +399,26 @@ public class RoundFacade {
 
     @Transactional
     public void saveMention(Long userId, MentionRequest mentionRequest) {
-        //Round preRound = roundService.findById(mentionRequest.roundId());
         User user = userService.findById(userId);
-
-        /*Player player = playerService.findByUserAndRound(user, preRound);
-
-        if (player.getRank() != 1)
-            throw new BusinessException(ErrorInfo.PLAYER_NOT_WINNER);*/
+        Room room = roomService.findById(mentionRequest.roomId());
+        Round round = roundService.getRound(room.getId());
 
         socketUtil.sendMessage("/games/" + mentionRequest.roomId() + "/mention", new MentionResponse(mentionRequest.mention(), user.getNickname(), user.getColor().getHexColor()));
 
-        Round nextRound = roundService.findById(mentionRequest.nextRoundId());
-        nextRound.updateAggro(mentionRequest.mention());
-        roundService.save(nextRound);
+        round.updateAggro(mentionRequest.mention());
+        roundService.save(round);
+    }
+
+    public void sendTime(Long roomId, int time) {
+        new Thread(() -> {
+            try {
+                for (int sec = time; sec >= 0; sec--) {
+                    socketUtil.sendMessage("/games/" + roomId + "/time", new TimeResponse(sec));
+                    Thread.sleep(1000);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }).start();
     }
 }

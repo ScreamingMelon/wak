@@ -28,13 +28,13 @@ public class PlayerFacade {
 
         Room room = roomService.findById(request.getRoomId());
 
-        Round round = roundService.findById(request.getRoundId());
+        Round round = roundService.getRound(room.getId());
         User user = userService.findById(request.getUserId());
         User victimUser = userService.findById(request.getVictimId());
+
         Long currentTimeInNanos = timeUtil.getCurrentTimeInNanos();
 
         ClickDTO click = new ClickDTO(user.getId(), victimUser.getId(), round.getId(), request.getClickTime(), currentTimeInNanos);
-
         playerService.saveClickLog(room.getId(), click);
     }
 }

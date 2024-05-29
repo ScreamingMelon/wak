@@ -41,6 +41,7 @@ public class RoundController {
     @ApiErrorExamples({ErrorInfo.USER_NOT_EXIST, ErrorInfo.ROOM_NOT_EXIST, ErrorInfo.ROOM_NOT_HOST, ErrorInfo.ROUND_NOT_EXIST, ErrorInfo.ROOM_ALREADY_STARTED, ErrorInfo.ROOM_ALREADY_STARTED})
     @PostMapping("/start/{room-id}")
     public ResponseEntity<ApiResult<GameStartResponse>> startGame(@RequestBody GameStartRequest gameStartRequest, @PathVariable("room-id") Long roomId, @AuthUser Long userId) {
+        System.out.println("startGame 요청");
         GameStartResponse gameStartResponse = roundFacade.startGame(gameStartRequest, roomId, userId);
         return ResponseEntity.ok(ApiUtils.success(gameStartResponse));
     }
@@ -60,20 +61,6 @@ public class RoundController {
     }
 
     @Operation(
-            summary = "도발 멘트 작성",
-            description = "각 라운드 시작 전 도발 멘트 작성",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "멘션 성공")
-            },
-            security = {@SecurityRequirement(name = "Access-Token")}
-    )
-    @MessageMapping("/{room-id}/mention")
-    public void mention(@RequestBody GameStartRequest gameStartRequest, @DestinationVariable("room-id") Long roundId) {
-        // List<AlivePlayerResponse> aliveUsers = roundFacade.startGameAndReturnStatus(gameStartRequest, roomId);
-        //messagingTemplate.convertAndSend("/topic/games/" + roomId + "mention", aliveUsers);
-    }
-
-    @Operation(
             summary = "게임 입장시 게임 참여 유저들 정보 반환",
             description = "게임 입장시 게임 참여 유저들 정보를 publish 요청하는 API 입니다.",
             responses = {
@@ -83,8 +70,10 @@ public class RoundController {
     )
     @GetMapping("/{roomId}/battle-field")
     public ResponseEntity<ApiResult<Void>> publishBattleField(@PathVariable Long roomId) {
+        System.out.println("겟겟");
         roundFacade.sendBattleField(roomId, false);
         roundFacade.sendDashBoard(roomId,1);
+        roundFacade.sendTime(roomId, 5);
         return ResponseEntity.ok(ApiUtils.success(null));
     }
 
@@ -101,7 +90,6 @@ public class RoundController {
         roundFacade.sendMention(roomId);
         return ResponseEntity.ok(ApiUtils.success(null));
     }
-
 }
 
 

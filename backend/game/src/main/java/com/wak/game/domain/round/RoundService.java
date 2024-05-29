@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ public class RoundService {
     private final RoundRepository roundRepository;
     private final RedisUtil redisUtil;
     private final ApplicationContext applicationContext;
+    private final Lock lock = new ReentrantLock();
     private final ConcurrentHashMap<Long, Thread> gameThreads = new ConcurrentHashMap<>();
 
     public Round findById(Long roundId) {
@@ -34,23 +37,25 @@ public class RoundService {
 
     @Transactional
     public Round startRound(Room room, GameStartRequest gameStartRequest) {
-        Round round = Round.builder()
+        Round round =  Round.builder()
                 .roundNumber(1)
                 .room(room)
                 .aggro(gameStartRequest.getComment())
                 .showNickname(gameStartRequest.isShowNickname())
                 .build();
-
-        return roundRepository.save(round);
+        roundRepository.save(round);
+        return round;
     }
 
     @Transactional
     public Round startNextRound(Round previousRound) {
         Room room = previousRound.getRoom();
-        Round nextRound = Round.builder()
+
+        Round nextRound = null;
+        nextRound = Round.builder()
                 .roundNumber(previousRound.getRoundNumber() + 1)
                 .room(room)
-                .aggro(previousRound.getAggro())
+                .aggro("")
                 .showNickname(previousRound.getShowNickname())
                 .build();
 
@@ -114,6 +119,13 @@ public class RoundService {
 
     public void save(Round round) {
         roundRepository.save(round);
+    }
+
+    public Round getRound(Long roomId) {
+        Map<String, Long> data = redisUtil.getData("room:round", Long.class);
+        Long roundId = data.get(roomId.toString());
+
+        return findById(roundId);
     }
 }
 

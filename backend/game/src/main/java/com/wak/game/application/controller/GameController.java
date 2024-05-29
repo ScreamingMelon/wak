@@ -23,6 +23,7 @@ public class GameController {
 
     @MessageMapping("/mention/{roomId}")
     public void setMention(@AuthUser Long userId, @Payload MentionRequest mentionRequest) {
+        System.out.println("멘션 수정 요청");
         roundFacade.saveMention(userId, mentionRequest);
     }
 }
