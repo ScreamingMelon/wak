@@ -14,8 +14,7 @@ spring:
         dialect: org.hibernate.dialect.MariaDBDialect
 
 origin:
-  frontend:
-    https://wakgame.com
+  frontend: https://wakgame.com # todo change on local
 server:
   port: 8081
   forward-headers-strategy: framework

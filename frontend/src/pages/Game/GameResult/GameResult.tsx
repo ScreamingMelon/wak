@@ -18,7 +18,7 @@ type GameResultProps = {
 };
 
 export default function GameResult({ client, changeState }: GameResultProps) {
-  const RESULTS_LENGTH = 5;
+  const RESULTS_LENGTH = 4;
   const ROUND_NUMBER = 3;
   const navigate = useNavigate();
   const ACCESS_TOKEN = getAccessToken();
@@ -61,7 +61,7 @@ export default function GameResult({ client, changeState }: GameResultProps) {
       roomId: id && parseInt(id),
       mention: mention,
     });
-    client.send(`app/mention/${id}`, header, message);
+    client.send(`/app/mention/${id}`, header, message);
     console.log(message);
   };
 
@@ -148,7 +148,6 @@ export default function GameResult({ client, changeState }: GameResultProps) {
     title: `<< ${roundNumber} 라운드 결과 >>`,
     results: [
       ['게임 시간', `${playTime}초`],
-      ['나의 생존 시간', `${aliveTime}초`],
       ['나의 킬 수', `${killCount}킬`],
       ['나의 랭킹', `${rank}위`],
       ['나를 죽인 사람', `${rank === 1 ? `없음` : victim}`],
@@ -164,7 +163,6 @@ export default function GameResult({ client, changeState }: GameResultProps) {
     title: `<< 최종 결과 >>`,
     results: [
       ['총 게임 시간', `${totalTime}초`],
-      ['나의 총 생존 시간', `${totalAliveTime}초`],
       ['나의 총 킬 수', `${totalKillCount}킬`],
       ['나의 최종 랭킹', `${finalRank}위`],
       ['최종 1위', `${rankwinnerNickname}`],
