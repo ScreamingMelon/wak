@@ -17,9 +17,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 			.withSockJS(); // apic test 시 주석 처리 필요
 	}
 
-	@Override
-	public void configureMessageBroker(MessageBrokerRegistry registry) {
-		registry.enableSimpleBroker("/topic");
-		registry.setApplicationDestinationPrefixes("/app");
-	}
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic");
+        registry.setApplicationDestinationPrefixes("/app");
+    }
 }

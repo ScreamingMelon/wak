@@ -3,6 +3,7 @@ package com.wak.game.domain.round.thread;
 import com.wak.game.application.facade.RankFacade;
 import com.wak.game.application.facade.RoundFacade;
 import com.wak.game.application.response.socket.KillLogResponse;
+import com.wak.game.application.response.socket.TimeResponse;
 import com.wak.game.domain.player.dto.PlayerInfo;
 import com.wak.game.domain.round.Round;
 import com.wak.game.domain.round.RoundService;
@@ -58,9 +59,9 @@ public class ClickEventProcessor implements Runnable {
 
                 for (int i = 0; i < clickDataList.size(); i++) {
                     ClickDTO click = clickDataList.get(i);
-                    if (click == null)
-                        continue;
 
+                    System.out.println("처리해야할 클릭");
+                    System.out.println(click.toString());
                     lastProcessedIndex++;
                     checkClickedUser(click);
                     if (!running)
@@ -78,10 +79,7 @@ public class ClickEventProcessor implements Runnable {
 
     @Transactional
     protected void checkClickedUser(ClickDTO click) {
-        Round round = roundService.findById(click.getRoundId());
-
-        if (!click.getRoundId().equals(this.roundId))
-            throw new BusinessException(ErrorInfo.THREAD_ID_IS_DIFFERENT);
+        Round round = roundService.getRound(roomId);
 
         if (!round.getId().equals(roundId))
             throw new BusinessException(ErrorInfo.ROUND_NOT_MATCHED);
@@ -98,52 +96,54 @@ public class ClickEventProcessor implements Runnable {
             throw new BusinessException(ErrorInfo.PLAYER_NOT_FOUND);
         }
 
-
         if (isAlive(user) && isAlive(victim)) {
             victim.updateStamina(-1);
             redisUtil.saveData(key, victim.getUserId().toString(), victim);
 
             saveSuccessfulClick(click);
-
-            roundFacade.sendBattleField(roomId, false);
-            roundFacade.sendDashBoard(roomId, round.getRoundNumber());
-
             --aliveCount;
 
-            saveSuccessfulClick(click);
-            socketUtil.sendMessage("/games/" + roomId + "/kill-log", new KillLogResponse(click.getRoundId(), user.getNickname(), user.getColor(), victim.getNickname(), victim.getColor()));
-
             rankFacade.updateRankings(click, roomId);
-            rankFacade.sendRank(roomId);
 
-            //countDown(60);
-
-            if (aliveCount > 1)
+            if (aliveCount > 1){
+                socketUtil.sendMessage("/games/" + roomId + "/kill-log", new KillLogResponse(click.getRoundId(), user.getNickname(), user.getColor(), victim.getNickname(), victim.getColor()));
+                roundFacade.sendBattleField(roomId, false);
+                roundFacade.sendDashBoard(roomId, round.getRoundNumber());
+                rankFacade.sendRank(roomId);
                 return;
+            }
 
+            System.out.println("종료 조건");
             roundFacade.endRound(roomId, roundId);
+            System.out.println("플레이어 정리 완료");
+
+            roundFacade.sendResult(roomId, roundId, null, round1Id, round2Id, round3Id);
+            System.out.println("결과 반환 성공");
 
             if (round.getRoundNumber() == 3) {
-                roundFacade.sendResult(roomId, roundId, null, round1Id, round2Id, round3Id);
-                //todo 룸상태를대기실로 바꿔야 함.
-
-                //roundFacade.endGame(roomId);
+                roundFacade.endGame(roomId);
                 stop();
             }
 
-            Round nextRound = roundFacade.startNextRound(round);
-            roundFacade.sendResult(roomId, roundId, nextRound.getId(), round1Id, round2Id, round3Id);
-
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            //30초를
+            for (int sec = 30; sec >= 0; sec--) {
+                System.out.print(sec);
+                try {
+                    Thread.sleep(1000);
+                    socketUtil.sendMessage("/games/" + roomId + "/time", new TimeResponse(sec));
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
+
+            Round nextRound = roundFacade.startNextRound(round);
+            updateNextRound(nextRound.getId());
+
             roundFacade.initializeGameStatuses(roomId, nextRound);
             roundFacade.sendDashBoard(roomId, nextRound.getRoundNumber());
             rankFacade.sendRank(roomId);
-            updateNextRound(nextRound.getId());
         }
+
     }
 
     private void countDown(int sec) {
