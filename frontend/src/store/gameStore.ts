@@ -4,7 +4,7 @@ import { GameTypes } from '../types/GameTypes';
 
 interface Store {
   gameData: GameTypes;
-  setGameData: (userData: GameTypes) => void;
+  setGameData: (gameData: GameTypes) => void;
 }
 
 const useGameStore = create(
@@ -12,6 +12,8 @@ const useGameStore = create(
     (set) => ({
       gameData: {
         roundId: -1,
+        nextRoundId: -1,
+        roundNumber: 1,
         roomName: '',
         hostName: '',
         comment: '',

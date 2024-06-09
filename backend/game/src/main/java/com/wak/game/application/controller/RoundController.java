@@ -41,23 +41,10 @@ public class RoundController {
     @ApiErrorExamples({ErrorInfo.USER_NOT_EXIST, ErrorInfo.ROOM_NOT_EXIST, ErrorInfo.ROOM_NOT_HOST, ErrorInfo.ROUND_NOT_EXIST, ErrorInfo.ROOM_ALREADY_STARTED, ErrorInfo.ROOM_ALREADY_STARTED})
     @PostMapping("/start/{room-id}")
     public ResponseEntity<ApiResult<GameStartResponse>> startGame(@RequestBody GameStartRequest gameStartRequest, @PathVariable("room-id") Long roomId, @AuthUser Long userId) {
+        System.out.println("startGame 요청");
         GameStartResponse gameStartResponse = roundFacade.startGame(gameStartRequest, roomId, userId);
         return ResponseEntity.ok(ApiUtils.success(gameStartResponse));
     }
-
-    /*@Operation(
-            summary = "게임 시작 시 publish 요청",
-            description = "게임 시작 시 대시보드 대한 정보를 publish 요청하는 API 입니다.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "dashboard 초기값 반환 성공")
-            },
-            security = {@SecurityRequirement(name = "Access-Token")}
-    )
-    @GetMapping("/{round-id}/dashboard")
-    public ResponseEntity<ApiResult<Void>> getDashBoard(@DestinationVariable("round-id") Long roundId) {
-        roundFacade.sendDashBoard(roundId);
-        return ResponseEntity.ok(ApiUtils.success(null));
-    }*/
 
     @Operation(
             summary = "게임 시작 시 publish 요청",
@@ -74,20 +61,6 @@ public class RoundController {
     }
 
     @Operation(
-            summary = "도발 멘트 작성",
-            description = "각 라운드 시작 전 도발 멘트 작성",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "멘션 성공")
-            },
-            security = {@SecurityRequirement(name = "Access-Token")}
-    )
-    @MessageMapping("/{room-id}/mention")
-    public void mention(@RequestBody GameStartRequest gameStartRequest, @DestinationVariable("room-id") Long roundId) {
-        // List<AlivePlayerResponse> aliveUsers = roundFacade.startGameAndReturnStatus(gameStartRequest, roomId);
-        //messagingTemplate.convertAndSend("/topic/games/" + roomId + "mention", aliveUsers);
-    }
-
-    @Operation(
             summary = "게임 입장시 게임 참여 유저들 정보 반환",
             description = "게임 입장시 게임 참여 유저들 정보를 publish 요청하는 API 입니다.",
             responses = {
@@ -97,7 +70,24 @@ public class RoundController {
     )
     @GetMapping("/{roomId}/battle-field")
     public ResponseEntity<ApiResult<Void>> publishBattleField(@PathVariable Long roomId) {
+        System.out.println("겟겟");
         roundFacade.sendBattleField(roomId, false);
+        roundFacade.sendDashBoard(roomId,1);
+        roundFacade.sendTime(roomId, 5);
+        return ResponseEntity.ok(ApiUtils.success(null));
+    }
+
+    @Operation(
+            summary = "게임 입장시 도발 멘트 반환",
+            description = "게임 입장시 도발멘트를 publish 요청하는 API 입니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "도발멘트 반환 성공")
+            },
+            security = {@SecurityRequirement(name = "Access-Token")}
+    )
+    @GetMapping("/{roomId}/mention")
+    public ResponseEntity<ApiResult<Void>> publishMention(@PathVariable Long roomId) {
+        roundFacade.sendMention(roomId);
         return ResponseEntity.ok(ApiUtils.success(null));
     }
 }

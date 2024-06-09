@@ -3,7 +3,7 @@ import { RegularText } from '../../../styles/fonts';
 import { FlexLayout } from '../../../styles/layout';
 
 const TitleImg = styled.img.attrs({
-  src: require('../../../assets/img-title1.png'),
+  src: require('../../../assets/mainImg/img-title1.png'),
   alt: 'WAK GAME',
 })`
   width: 28rem;

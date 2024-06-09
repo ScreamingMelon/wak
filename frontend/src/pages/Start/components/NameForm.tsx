@@ -6,6 +6,7 @@ import useUserStore from '../../../store/userStore';
 import styled, { keyframes } from 'styled-components';
 import { SmallText } from '../../../styles/fonts';
 import { FlexLayout } from '../../../styles/layout';
+import { motion } from 'framer-motion';
 
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
@@ -21,15 +22,18 @@ const FormBlock = styled(FlexLayout)`
   position: relative;
 `;
 
+const ImgBlock = styled(motion.div)`
+  position: absolute;
+  top: 0.4rem;
+  left: -6rem;
+`;
+
 const ExclamationImg = styled.img.attrs({
   src: require('../../../assets/img-exclamation-mark.png'),
   alt: '사용할 수 없는 닉네임',
 })`
   width: 5.2rem;
   height: fit-content;
-  position: absolute;
-  top: 0.4rem;
-  left: -6rem;
 `;
 
 export default function NicknameForm() {
@@ -65,7 +69,7 @@ export default function NicknameForm() {
           setMessage('DUPLICATED');
         } else {
           console.error('로그인 에러', error);
-          navigate(`/error`);
+          navigate('/error', { replace: true });
         }
       }
     }
@@ -83,7 +87,15 @@ export default function NicknameForm() {
         </SmallText>
       )}
       <FormBlock gap='1rem'>
-        {message !== 'NO_INPUT' && <ExclamationImg />}
+        {message !== 'NO_INPUT' && (
+          <ImgBlock
+            initial={{ y: 10 }}
+            animate={{ y: 0 }}
+            transition={{ type: 'spring', damping: 2.5, stiffness: 200 }}
+          >
+            <ExclamationImg />
+          </ImgBlock>
+        )}
         <Input isRound name='nickname' width='36rem' onChange={handleChange} />
         <Button isBigger label={`GO!`} onClick={handleClick} />
       </FormBlock>

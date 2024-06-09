@@ -2,5 +2,5 @@ export type UserDataType = {
   nickname: string;
   color: string;
   token: string | null;
-  userId: string | null;
+  userId: number | null;
 };

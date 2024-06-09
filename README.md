@@ -1,10 +1,84 @@
 ![logo](asset/banner.png)
 
+<table>
+  <tbody>
+    <tr>
+        <td align="center">
+            <a href="https://github.com/ryuu9505">
+            <img src="https://avatars.githubusercontent.com/u/66634707?v=4" width="256px"/>
+                <br/>
+                <b>조형준</b>
+            </a>
+            <br/>
+            <sub>BE</sub>
+        </td>
+        <td align="center">
+            <a href="https://github.com/olnuyh">
+            <img src="https://avatars.githubusercontent.com/u/49039762?v=4" width="256px"/>
+                <br/>
+                <b>김이현</b>
+            </a>
+            <br/>
+            <sub>BE</sub>
+        </td>
+        <td align="center">
+            <a href="https://github.com/fkdusrh">
+            <img src="https://avatars.githubusercontent.com/u/84490586?v=4" width="256px"/>
+                <br/>
+                <b>김라연</b>
+            </a>
+            <br/>
+            <sub>BE</sub>
+        </td>
+        <td align="center">
+            <a href="https://github.com/slcloe">
+            <img src="https://avatars.githubusercontent.com/u/67732600?v=4" width="256px"/>
+                <br/>
+                <b>김한슬</b>
+            </a>
+            <br/>
+            <sub>BE</sub>
+        </td>
+        <td align="center">
+            <a href="https://github.com/minwoo-kwak">
+            <img src="https://avatars.githubusercontent.com/u/117497001?v=4" width="256px"/>
+                <br/>
+                <b>곽민우</b>
+            </a>
+            <br/>
+            <sub>BE</sub>
+        </td>
+        <td align="center">
+            <a href="https://github.com/annyoon">
+            <img src="https://avatars.githubusercontent.com/u/79207743?v=4" width="256px"/>
+                <br/>
+                <b>윤서안</b>
+            </a>
+            <br/>
+            <sub>FE</sub>
+        </td>
+    </tr>
+  </tbody>
+</table>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
 #### 📃 목차
 
 1. [프로젝트 소개](#-프로젝트-소개)   
 2. [서비스 소개](#-주요-기능)  
-3. [팀 소개](#-팀-소개)  
+<!-- 3. [팀 소개](#-팀-소개)   -->
 
 <br>
 <br>
@@ -52,8 +126,8 @@
 <br>
 
 ### 🧤 특징
-    ✔ ...
-    ✔ ...
+    ✔ 규칙이 매우 간단하다!
+    ✔ 매우 많은 인원이 참여할 수 있다!
 
 
 <br>
@@ -71,109 +145,32 @@
 
 ### 📃 설계
 
-**인프라 아키텍쳐**
+**시스템 아키텍쳐**
 
-![...](asset/infraarch.png)
-
-**백엔드 아키텍쳐**
-
-![...](asset/bearch.png)
+![...](asset/arch.png)
 
 **ERD 다이어그램**
 
 ![...](asset/erd.png)
 
 **외부 문서**
-- [와이어프레임](#)
+
+- [프로젝트 관리 페이지 | 노션](https://ritzy-doom-b84.notion.site/2024-04-09-ing-1666b82f3b1743dea5bdd5cadb70d23a?pvs=4)
+
+- [화면 설계 | 피그마](https://www.figma.com/design/n4P98ORpCAIpDXfny4mWdt/Untitled?node-id=0-1&t=EKuxFhTQti5T6gin-1)
 
 <br>
 
 ### 🥾 주요 기능
 
-|구분| 설명                                                                             | BE 담당 | FE 담당 |
-|:---|:-------------------------------------------------------------------------------|:---|:---|
-|인증| - ... |🐭김라연<br>🐱김한슬|🐹윤서안|
-|게임| - ...<br> - ... |🐭김라연<br>🐱김한슬|🐹윤서안|
-|채팅| - 실시간 채팅 |🐷조형준<br>🐰김이현|🐹윤서안|
+|구분| 설명                                                                             | BE 담당 | FE 담당 | INFRA 담당 |
+|:---|:-------------------------------------------------------------------------------|:---|:---|:---|
+|인증| - JWT 기반의 인증 |🐭김라연<br>🐱김한슬|🐹윤서안|🐵곽민우|
+|게임| - 웹소켓 기반의 실시간 게임 |🐭김라연<br>🐱김한슬|🐹윤서안|🐵곽민우|
+|채팅| - 레디스 Pub/Sub 기반의 채팅  |🐷조형준<br>🐰김이현|🐹윤서안|🐵곽민우|
 
 <br>
 
 ### 🕊 실행방법
 
 exec 폴더 내 포팅 메뉴얼 참조
-
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-
-# 👨‍👩‍👧‍👦 팀 소개 
-
-<table>
-  <tbody>
-    <tr>
-        <td align="center">
-            <a href="https://github.com/ryuu9505">
-            <img src="https://avatars.githubusercontent.com/u/66634707?v=4" width="60px"/>
-                <br/>
-                <b>조형준</b>
-            </a>
-            <br/>
-            <sub>BE</sub>
-        </td>
-        <td align="center">
-            <a href="https://github.com/olnuyh">
-            <img src="https://avatars.githubusercontent.com/u/49039762?v=4" width="60px"/>
-                <br/>
-                <b>김이현</b>
-            </a>
-            <br/>
-            <sub>BE</sub>
-        </td>
-        <td align="center">
-            <a href="https://github.com/">
-            <img src="#" width="100px"/>
-                <br/>
-                <b>김라연</b>
-            </a>
-            <br/>
-            <sub>BE</sub>
-        </td>
-        <td align="center">
-            <a href="https://github.com/">
-            <img src="#" width="100px"/>
-                <br/>
-                <b>김한슬</b>
-            </a>
-            <br/>
-            <sub>BE</sub>
-        </td>
-        <td align="center">
-            <a href="https://github.com/">
-            <img src="#" width="100px"/>
-                <br/>
-                <b>윤서안</b>
-            </a>
-            <br/>
-            <sub>FE</sub>
-        </td>
-        <td align="center">
-            <a href="https://github.com/">
-            <img src="#" width="100px"/>
-                <br/>
-                <b>곽민우</b>
-            </a>
-            <br/>
-            <sub>Infra</sub>
-        </td>
-    </tr>
-  </tbody>
-</table>

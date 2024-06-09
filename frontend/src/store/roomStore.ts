@@ -3,7 +3,7 @@ import { RoomInfoTypes } from '../types/RoomTypes';
 
 interface Store {
   roomData: RoomInfoTypes;
-  setRoomData: (userData: RoomInfoTypes) => void;
+  setRoomData: (roomData: RoomInfoTypes) => void;
 }
 
 const useRoomStore = create<Store>((set) => ({

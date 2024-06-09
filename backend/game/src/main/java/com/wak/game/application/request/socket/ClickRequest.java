@@ -1,4 +1,4 @@
-package com.wak.game.application.request;
+package com.wak.game.application.request.socket;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -9,14 +9,17 @@ import java.time.LocalDateTime;
 
 @Getter
 @ToString
+@NoArgsConstructor
 public class ClickRequest {
-    private final Long roundId;
-    private final Long userId;
-    private final Long victimId;
-    private final String clickTime;
+    private Long roomId;
+    private Long roundId;
+    private Long userId;
+    private Long victimId;
+    private String clickTime;
 
     @Builder
-    public ClickRequest(Long roundId, Long userId, Long victimId, String clickTime) {
+    public ClickRequest(Long roomId, Long roundId, Long userId, long victimId, String clickTime) {
+        this.roomId = roomId;
         this.roundId = roundId;
         this.userId = userId;
         this.victimId = victimId;

@@ -66,4 +66,19 @@ public class Player extends BaseEntity {
         this.team = team;
         this.isQueen = isQueen;
     }
+
+    public void updateOnAttack(Player murderPlayer, String aliveTime) {
+        this.murderPlayer = murderPlayer;
+        this.stamina -= 1;
+        this.aliveTime = aliveTime;
+    }
+
+    public void updateRankAncKillCnt(int killCnt, int i) {
+        this.killCount = killCnt;
+        this.rank = i;
+    }
+
+    public void updateWinnerAliveTime(String time) {
+        this.aliveTime = time;
+    }
 }

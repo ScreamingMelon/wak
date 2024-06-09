@@ -1,19 +1,12 @@
 package com.wak.game.domain.round;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wak.game.application.facade.RankFacade;
 import com.wak.game.application.facade.RoundFacade;
 import com.wak.game.application.request.GameStartRequest;
 import com.wak.game.application.response.SummaryCountResponse;
-import com.wak.game.application.vo.RoomVO;
-import com.wak.game.domain.player.Player;
-import com.wak.game.domain.player.PlayerService;
 import com.wak.game.domain.player.dto.PlayerInfo;
-import com.wak.game.domain.rank.dto.RankInfo;
-import com.wak.game.domain.round.dto.PlayerCount;
 import com.wak.game.domain.round.thread.ClickEventProcessor;
 import com.wak.game.domain.room.Room;
-import com.wak.game.domain.user.User;
 import com.wak.game.global.error.ErrorInfo;
 import com.wak.game.global.error.exception.BusinessException;
 import com.wak.game.global.util.RedisUtil;
@@ -25,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +28,7 @@ public class RoundService {
     private final RoundRepository roundRepository;
     private final RedisUtil redisUtil;
     private final ApplicationContext applicationContext;
+    private final Lock lock = new ReentrantLock();
     private final ConcurrentHashMap<Long, Thread> gameThreads = new ConcurrentHashMap<>();
 
     public Round findById(Long roundId) {
@@ -41,23 +37,25 @@ public class RoundService {
 
     @Transactional
     public Round startRound(Room room, GameStartRequest gameStartRequest) {
-        Round round = Round.builder()
+        Round round =  Round.builder()
                 .roundNumber(1)
                 .room(room)
                 .aggro(gameStartRequest.getComment())
                 .showNickname(gameStartRequest.isShowNickname())
                 .build();
-
-        return roundRepository.save(round);
+        roundRepository.save(round);
+        return round;
     }
 
     @Transactional
     public Round startNextRound(Round previousRound) {
         Room room = previousRound.getRoom();
-        Round nextRound = Round.builder()
+
+        Round nextRound = null;
+        nextRound = Round.builder()
                 .roundNumber(previousRound.getRoundNumber() + 1)
                 .room(room)
-                .aggro(previousRound.getAggro())
+                .aggro("")
                 .showNickname(previousRound.getShowNickname())
                 .build();
 
@@ -86,31 +84,23 @@ public class RoundService {
                 .build();
     }
 
-    public void startThread(Long roomId, Long roundId) {
+    public void startThread(Long roomId, Long roundId, int playerCnt) {
 
         RedisUtil redisUtil = applicationContext.getBean(RedisUtil.class);
-        ObjectMapper objectMapper = applicationContext.getBean(ObjectMapper.class);
         SocketUtil socketUtil = applicationContext.getBean(SocketUtil.class);
         RoundService roundService = applicationContext.getBean(RoundService.class);
-        PlayerService playerService = applicationContext.getBean(PlayerService.class);
         RoundFacade roundFacade = applicationContext.getBean(RoundFacade.class);
         RankFacade rankFacade = applicationContext.getBean(RankFacade.class);
 
-        ClickEventProcessor clickProcessor = new ClickEventProcessor(roundId, roomId, redisUtil, objectMapper, socketUtil, roundService, playerService, roundFacade, rankFacade);
+        ClickEventProcessor clickProcessor = new ClickEventProcessor(roundId, roomId, playerCnt, redisUtil, socketUtil, roundService, roundFacade, rankFacade);
         Thread thread = new Thread(clickProcessor);
         thread.start();
 
         gameThreads.put(roomId, thread);
     }
 
-    /**
-     * 클릭 유효성 처리하는 스레드 종료 및 제거
-     * + round가 끝날때마다 스레드 제거하고 재생성 VS round3까지 유지
-     *
-     * @param id
-     */
-    public void endThread(Long id) {
-        Thread thread = gameThreads.remove(id);
+    public void endThread(Long roomId) {
+        Thread thread = gameThreads.remove(roomId);
 
         if (thread != null) {
             thread.interrupt();
@@ -125,6 +115,17 @@ public class RoundService {
     @Transactional
     public void deleteRound(Long id) {
         roundRepository.deleteRound(id);
+    }
+
+    public void save(Round round) {
+        roundRepository.save(round);
+    }
+
+    public Round getRound(Long roomId) {
+        Map<String, Long> data = redisUtil.getData("room:round", Long.class);
+        Long roundId = data.get(roomId.toString());
+
+        return findById(roundId);
     }
 }
 

@@ -15,7 +15,6 @@ public enum ErrorInfo {
     /* COLOR */
     COLOR_NOT_EXIST(HttpStatus.INTERNAL_SERVER_ERROR, "COLOR IS NOT FOUND"),
 
-
     /* USER */
     USER_NOT_EXIST(HttpStatus.NOT_FOUND, "USER IS NOT FOUND"),
     USER_ALREADY_EXIST(HttpStatus.NOT_FOUND, "USER IS ALREADY FOUND"),
@@ -30,8 +29,14 @@ public enum ErrorInfo {
     AUTH_CLIENT_BY_AUTHORIZATION_IS_NECESSARY(HttpStatus.NOT_FOUND, "AUTHENTICATION IS REQUIRED"),
 
     /* CHAT */
+
     /* PLAYER */
+    PLAYER_NOT_FOUND(HttpStatus.NOT_FOUND, "PLAYER IS NOT FOUND"),
+    PLAYER_NOT_WINNER(HttpStatus.FORBIDDEN, "PLAYER IS NOT WINNER"),
+
     /* PLAYER LOG*/
+    ClICK_LOG_IS_EMPTY(HttpStatus.NOT_FOUND, "CLICK LOG IS EMPTY"),
+
     /* ROOM */
     ROOM_NOT_EXIST(HttpStatus.NOT_FOUND, "ROOM IS NOT FOUND"),
     ROOM_NOT_EXIST_IN_REDIS(HttpStatus.NOT_FOUND, "ROOM IS NOT FOUND IN REDIS"),
@@ -50,8 +55,13 @@ public enum ErrorInfo {
     /* ROOM LOG*/
     /* ROUND */
     ROUND_NOT_EXIST(HttpStatus.NOT_FOUND, "ROUND IS NOT FOUND"),
-    THREAD_ID_IS_DIFFERENT(HttpStatus.NOT_FOUND, "현재 동작하는 스레드와 처리하려는 데이터의 roundId가 다릅니다."),/*나중에 지울겠습니다*/
+    ROUND_NOT_MATCHED(HttpStatus.CONFLICT, "ROUND IS NOT MATCHED"),
 
+    /* THREAD */
+    THREAD_ID_IS_DIFFERENT(HttpStatus.NOT_FOUND, "현재 동작하는 스레드와 처리하려는 데이터의 roundId가 다릅니다."),/*나중에 지울겠습니다*/
+    THREAD_DESERIALIZING_DATA(HttpStatus.BAD_REQUEST, "DATA DESERIALIZING FAIL"),
+    THREAD_SERIALIZING_DATA(HttpStatus.BAD_REQUEST, "DATA SERIALIZING FAIL"),
+    THREAD_FORMAT_NOT_MATCHED(HttpStatus.BAD_REQUEST, "DATA FORMAT IS NOT MATCHED")
     /**/;
 
     ErrorInfo(HttpStatus httpStatus, String message) {

@@ -46,9 +46,11 @@ export default function EnterCheckDialog({
         setMessage('WRONG_PASSWORD');
       } else if (message === 'ROOM IS FULL') {
         setMessage('FULL_ROOM');
+      } else if (message === 'ROOM IS START') {
+        setMessage('ALREADY_START');
       } else {
         console.error('방 입장하기 에러', error);
-        navigate('/error');
+        navigate('/error', { replace: true });
       }
     }
   };

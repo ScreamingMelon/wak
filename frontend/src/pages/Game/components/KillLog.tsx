@@ -1,7 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { CompatClient } from '@stomp/stompjs';
-import { getAccessToken } from '../../../constants/api';
-import useGameStore from '../../../store/gameStore';
+import { KillLogPlayersTypes } from '../../../types/GameTypes';
 
 import styled, { css } from 'styled-components';
 import { FlexLayout } from '../../../styles/layout';
@@ -23,59 +20,20 @@ const KillLogBlock = styled.div<{ $isWaiting?: boolean }>`
 
 const TextBlock = styled(FlexLayout)`
   justify-content: space-evenly;
-  margin-bottom: 0.4rem;
+  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
 `;
 
 const Text = styled.div`
   ${textStyles}
 `;
 
-type KillLogPlayersTypes = {
-  roundId: number;
-  userNickname: string;
-  color: string;
-  victimNickName: string;
-  victimColor: string;
-};
-
 type KillLogProps = {
   isWaiting?: boolean;
-  client: CompatClient;
+  logs: KillLogPlayersTypes[];
 };
 
-export default function KillLog({ isWaiting, client }: KillLogProps) {
-  const ACCESS_TOKEN = getAccessToken();
-  const header = {
-    Authorization: `Bearer ${ACCESS_TOKEN}`,
-    'Content-Type': 'application/json',
-  };
-  const { gameData } = useGameStore();
-  const [logs, setLogs] = useState<KillLogPlayersTypes[]>([]);
-  const subscribedRef = useRef(false);
-
-  const subscribeToTopic = () => {
-    if (!subscribedRef.current) {
-      client.subscribe(
-        `/topic/games/${gameData.roundId}/kill-log`,
-        (message) => {
-          setLogs((prevLogs) => {
-            const newLogs = [JSON.parse(message.body), ...prevLogs];
-            return newLogs;
-          });
-        },
-        header
-      );
-      subscribedRef.current = true;
-    }
-  };
-
-  useEffect(() => {
-    if (client && client.connected) {
-      subscribeToTopic();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client]);
-
+export default function KillLog({ isWaiting, logs }: KillLogProps) {
   return (
     <WhiteRoundBox width='32rem'>
       <KillLogBlock $isWaiting={isWaiting}>
@@ -88,7 +46,7 @@ export default function KillLog({ isWaiting, client }: KillLogProps) {
             return (
               <TextBlock key={index}>
                 <Text color={value.color}>{value.userNickname}</Text>
-                <Text>{`> > >`}</Text>
+                <Text>{`⌐╦═╦═─`}</Text>
                 <Text color={value.victimColor}>{value.victimNickName}</Text>
                 <Text>{`X`}</Text>
               </TextBlock>

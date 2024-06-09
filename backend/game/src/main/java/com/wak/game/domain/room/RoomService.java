@@ -90,6 +90,7 @@ public class RoomService {
         roomRepository.startGame(room.getId());
     }
 
+    @Transactional
     public void gameEnd(Room room) {
         roomRepository.endGame(room.getId());
     }

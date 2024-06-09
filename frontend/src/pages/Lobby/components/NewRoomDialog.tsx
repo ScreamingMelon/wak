@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createRoom } from '../../../services/room';
 
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { FlexLayout } from '../../../styles/layout';
 import { RegularText, SmallText, textStyles } from '../../../styles/fonts';
 import Dialog from '../../../components/Dialog';
@@ -23,11 +23,25 @@ const InputBlock = styled(FlexLayout)`
   position: relative;
 `;
 
-const WarningText = styled.div`
+const shake = keyframes`
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+`;
+
+const WarningText = styled.div<{ $warn: boolean }>`
   position: absolute;
   top: 4.8rem;
   right: 0;
   ${textStyles}
+  ${(props) =>
+    props.$warn &&
+    css`
+      color: #e84b4b;
+      animation: ${shake} 0.5s;
+    `}
 `;
 
 const TinyText = styled.div`
@@ -65,24 +79,20 @@ export default function NewRoomDialog({ closeDialog }: NewRoomDialogProps) {
 
   const handleClick = async () => {
     const updatedWarn = { ...warn };
-
-    if (info.title.length < 2 || 12 < info.title.length) {
-      updatedWarn.warnTitle = true;
-    } else {
-      updatedWarn.warnTitle = false;
-    }
-    if (info.players < 2 || 100 < info.players) {
-      updatedWarn.warnPlayers = true;
-    } else {
-      updatedWarn.warnPlayers = false;
-    }
-    if (info.isSecret && info.password.length !== 4) {
-      updatedWarn.warnPassword = true;
-    } else {
-      updatedWarn.warnPassword = false;
-    }
+    updatedWarn.warnTitle = info.title.length < 2 || info.title.length > 12;
+    updatedWarn.warnPlayers = !/^(?:[2-9]|[1-9][0-9]|100)$/.test(
+      info.players.toString()
+    );
+    updatedWarn.warnPassword = info.isSecret && !/^\d{4}$/.test(info.password);
 
     setWarn(updatedWarn);
+    setTimeout(() => {
+      setWarn({
+        warnTitle: false,
+        warnPlayers: false,
+        warnPassword: false,
+      });
+    }, 500);
 
     if (
       updatedWarn.warnTitle === false &&
@@ -95,7 +105,7 @@ export default function NewRoomDialog({ closeDialog }: NewRoomDialogProps) {
         navigate(`/room/${fetchedData.data.roomId}`);
       } catch (error: any) {
         console.error('방 만들기 에러', error);
-        navigate(`/error`);
+        navigate('/error', { replace: true });
       }
     }
   };
@@ -108,7 +118,8 @@ export default function NewRoomDialog({ closeDialog }: NewRoomDialogProps) {
           <SmallText color='black'>{`방 제목 :`}</SmallText>
           <Input name={`title`} width='52rem' onChange={handleChange} />
           <WarningText
-            color={warn.warnTitle ? '#e84b4b' : '#7c7c7c'}
+            color='#7c7c7c'
+            $warn={warn.warnTitle}
           >{`2자에서 12자 입력`}</WarningText>
         </InputBlock>
         <InputBlock gap='1rem'>
@@ -118,7 +129,8 @@ export default function NewRoomDialog({ closeDialog }: NewRoomDialogProps) {
             <SmallText color='black'>{`명 / 100 명`}</SmallText>
           </FlexLayout>
           <WarningText
-            color={warn.warnPlayers ? '#e84b4b' : '#7c7c7c'}
+            color='#7c7c7c'
+            $warn={warn.warnPlayers}
           >{`2 이상 100 이하의 숫자 입력`}</WarningText>
         </InputBlock>
 
@@ -139,7 +151,8 @@ export default function NewRoomDialog({ closeDialog }: NewRoomDialogProps) {
                 onChange={handleChange}
               />
               <WarningText
-                color={warn.warnPassword ? '#e84b4b' : '#7c7c7c'}
+                color='#7c7c7c'
+                $warn={warn.warnPassword}
               >{`4자리 숫자 입력`}</WarningText>
             </InputBlock>
           </FlexLayout>

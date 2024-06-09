@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { CompatClient } from '@stomp/stompjs';
-import { useNavigate } from 'react-router-dom';
+
 import { getAccessToken } from '../../../constants/api';
 import useUserStore from '../../../store/userStore';
 import useGameStore from '../../../store/gameStore';
-import useResultStore from '../../../store/resultStore';
-import { PlayersTypes } from '../../../types/GameTypes';
 import { isOverlap } from '../../../utils/isOverlap';
 
 import styled from 'styled-components';
 import GrayBox from '../../../components/GrayBox';
 import PlayerNickname from '../../../components/PlayerNickname';
 import { getBattleField } from '../../../services/game';
+import { PlayersTypes } from '../../../types/GameTypes';
 
 const BattleFieldLayout = styled.div`
   position: relative;
@@ -32,59 +32,34 @@ type DotPosition = {
 
 type BattleFieldProps = {
   client: CompatClient;
+  players: PlayersTypes[];
 };
 
-export default function BattleField({ client }: BattleFieldProps) {
+export default function BattleField({ client, players }: BattleFieldProps) {
   const navigate = useNavigate();
   const ACCESS_TOKEN = getAccessToken();
   const header = {
     Authorization: `Bearer ${ACCESS_TOKEN}`,
     'Content-Type': 'application/json',
   };
+  const { id } = useParams();
   const { userId } = useUserStore().userData;
-  const { roundId, playersNumber } = useGameStore().gameData;
-  const { setResultData } = useResultStore();
-  const [playerList, setPlayerList] = useState<PlayersTypes[]>([]);
+  const { gameData } = useGameStore();
   const [dots, setDots] = useState<DotPosition[]>([]);
-  const currentTime = new Date().toISOString();
-  const subscribedRef = useRef(false);
-
-  const subscribeToTopic = () => {
-    if (!subscribedRef.current) {
-      client.subscribe(
-        `/topic/games/${roundId}/battle-field`,
-        (message) => {
-          if (message.body === 'ROOM IS EXPIRED') {
-            navigate(`/lobby`);
-          } else if (JSON.parse(message.body).isFinished) {
-            setResultData(JSON.parse(message.body));
-          } else {
-            console.log('요청');
-            setPlayerList(JSON.parse(message.body).players);
-          }
-        },
-        header
-      );
-      subscribedRef.current = true;
-    }
-    showBattleField();
-  };
 
   const showBattleField = async () => {
     try {
-      await getBattleField(roundId);
+      id && (await getBattleField(parseInt(id)));
     } catch (error: any) {
       console.error('배틀필드 요청 에러', error);
-      navigate(`/error`);
+      navigate('/error', { replace: true });
     }
   };
 
   useEffect(() => {
-    if (client && client.connected) {
-      subscribeToTopic();
-    }
+    showBattleField();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client]);
+  }, [id]);
 
   useEffect(() => {
     const generatedDots: DotPosition[] = [];
@@ -93,26 +68,27 @@ export default function BattleField({ client }: BattleFieldProps) {
       left: `${Math.random() * 92}%`,
     });
 
-    while (generatedDots.length < playersNumber) {
+    while (generatedDots.length < gameData.playersNumber) {
       const newPosition = generateRandomPosition();
       if (!isOverlap(newPosition, generatedDots)) {
         generatedDots.push(newPosition);
       }
     }
-
     setDots(generatedDots);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roundId]);
+  }, [gameData.roundNumber]);
 
   const handleClick = (victimId: number) => {
-    if (userId && parseInt(userId) !== victimId) {
+    if (userId && userId !== victimId) {
+      const currentTime = new Date().toISOString();
       const message = JSON.stringify({
-        roundId: roundId,
+        roomId: id && parseInt(id),
+        roundId: gameData.roundId,
         userId: userId,
         victimId: victimId,
         clickTime: currentTime,
       });
-      client.send(`/app/click/${roundId}`, header, message);
+      client.send(`/app/click/${id}`, header, message);
     }
   };
 
@@ -121,12 +97,13 @@ export default function BattleField({ client }: BattleFieldProps) {
       <BattleFieldLayout>
         {dots.map((dot, index) => (
           <Dot key={index} $top={dot.top} $left={dot.left}>
-            {index < playerList.length && playerList[index].stamina > 0 && (
+            {index < players.length && players[index].stamina > 0 && (
               <PlayerNickname
                 isCol
-                nickname={playerList[index].nickname}
-                color={playerList[index].color}
-                onClick={() => handleClick(playerList[index].userId)}
+                isHidden={!gameData.showNickname}
+                nickname={players[index].nickname}
+                color={gameData.showNickname ? players[index].color : 'black'}
+                onClick={() => handleClick(players[index].userId)}
               />
             )}
           </Dot>

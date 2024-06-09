@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import { FlexLayout } from '../../styles/layout';
-
 import Background from '../../components/Background';
 import ChatBox from '../../components/ChatBox';
 import LobbyHeader from './components/LobbyHeader';

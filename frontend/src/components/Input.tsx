@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import styled, { css } from 'styled-components';
 import { textStyles } from '../styles/fonts';
@@ -45,19 +45,31 @@ const BorderX = styled.img.attrs({
 type InputProps = {
   name: string;
   width?: string;
+  reset?: boolean;
   isRound?: boolean;
   disabled?: boolean;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 };
 
 export default function Input({
   name,
   width,
+  reset,
   isRound,
   disabled,
   onChange,
+  handleKeyDown,
 }: InputProps) {
   const [inputValue, SetInputValue] = useState('');
+
+  const enterkey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing || e.key !== 'Enter') return;
+  
+    if (handleKeyDown) {
+      handleKeyDown(e);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -68,6 +80,12 @@ export default function Input({
   const img = isRound
     ? require('../assets/borderImg/img-border-black-h56.png')
     : require('../assets/borderImg/img-border-black-h42.png');
+
+  useEffect(() => {
+    if (reset) {
+      SetInputValue('');
+    }
+  }, [reset]);
 
   return (
     <InputBlock>
@@ -80,6 +98,7 @@ export default function Input({
         color='black'
         disabled={disabled}
         onChange={handleChange}
+        onKeyDown={enterkey}
       />
       <BorderX src={img} $right />
     </InputBlock>

@@ -1,76 +1,74 @@
 package com.wak.game.domain.round.thread;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wak.game.application.facade.RankFacade;
 import com.wak.game.application.facade.RoundFacade;
-import com.wak.game.application.response.DashBoardResponse;
-import com.wak.game.application.response.PlayerInfoResponse;
 import com.wak.game.application.response.socket.KillLogResponse;
-import com.wak.game.application.response.socket.ResultResponse;
-import com.wak.game.application.response.socket.RoundEndResultResponse;
-import com.wak.game.application.vo.RoomVO;
-import com.wak.game.application.vo.clickVO;
-import com.wak.game.domain.player.Player;
-import com.wak.game.domain.player.PlayerService;
+import com.wak.game.application.response.socket.TimeResponse;
 import com.wak.game.domain.player.dto.PlayerInfo;
-import com.wak.game.domain.rank.RankService;
-import com.wak.game.domain.rank.dto.RankInfo;
 import com.wak.game.domain.round.Round;
 import com.wak.game.domain.round.RoundService;
-import com.wak.game.domain.round.dto.PlayerCount;
+import com.wak.game.domain.round.dto.ClickDTO;
 import com.wak.game.global.error.ErrorInfo;
 import com.wak.game.global.error.exception.BusinessException;
 import com.wak.game.global.util.RedisUtil;
 import com.wak.game.global.util.SocketUtil;
+import jakarta.transaction.Transactional;
 
-import javax.xml.transform.Result;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ClickEventProcessor implements Runnable {
     private volatile boolean running = true;
-    private Long roomId;
+    private final Long roomId;
     private Long roundId;
+    private Long round1Id;
+    private Long round2Id;
+    private Long round3Id;
+    private final int playerCount;
+    private int aliveCount;
     private int lastProcessedIndex = 0;
     private RedisUtil redisUtil;
-    private ObjectMapper objectMapper;
     private final SocketUtil socketUtil;
     private final RoundService roundService;
-    private final PlayerService playerService;
     private final RoundFacade roundFacade;
     private final RankFacade rankFacade;
 
-    public ClickEventProcessor(Long roundId, Long roomId, RedisUtil redisUtil, ObjectMapper objectMapper, SocketUtil socketUtil, RoundService roundService, PlayerService playerService, RoundFacade roundFacade, RankFacade rankFacade) {
+    public ClickEventProcessor(Long roundId, Long roomId, int playerCnt, RedisUtil redisUtil, SocketUtil socketUtil, RoundService roundService, RoundFacade roundFacade, RankFacade rankFacade) {
         this.roundId = roundId;
+        this.round1Id = roundId;
         this.roomId = roomId;
+        this.playerCount = playerCnt;
         this.redisUtil = redisUtil;
-        this.objectMapper = objectMapper;
         this.socketUtil = socketUtil;
         this.roundService = roundService;
-        this.playerService = playerService;
         this.roundFacade = roundFacade;
         this.rankFacade = rankFacade;
+        this.aliveCount = playerCount;
     }
 
     @Override
     public void run() {
-        countDown(3);
+        //countDown(3);
 
         while (running) {
             try {
-                List<clickVO> clickDataList = redisUtil.getListData("roomId:" + roomId + ":clicks", clickVO.class);
+                List<ClickDTO> clickDataList = redisUtil.getListData("roomId:" + roomId + ":clicks", ClickDTO.class, lastProcessedIndex);
 
-                for (int i = lastProcessedIndex; i < clickDataList.size(); i++) {
-                    clickVO click = clickDataList.get(i);
-                    if (click != null) {
-                        checkClickedUser(click);
-                        lastProcessedIndex = i + 1;
-                    }
+                if (clickDataList.isEmpty()) {
+                    continue;
                 }
 
-                Thread.sleep(1000); // 10밀리초 대기
+                for (int i = 0; i < clickDataList.size(); i++) {
+                    ClickDTO click = clickDataList.get(i);
+
+                    System.out.println("처리해야할 클릭");
+                    System.out.println(click.toString());
+                    lastProcessedIndex++;
+                    checkClickedUser(click);
+                    if (!running)
+                        break;
+                }
+
+                Thread.sleep(1); // 10밀리초 대기
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
@@ -79,88 +77,73 @@ public class ClickEventProcessor implements Runnable {
         }
     }
 
-    private void checkClickedUser(clickVO click) {
-        if (!click.roundId().equals(this.roundId))
-            throw new BusinessException(ErrorInfo.THREAD_ID_IS_DIFFERENT);
+    @Transactional
+    protected void checkClickedUser(ClickDTO click) {
+        Round round = roundService.getRound(roomId);
+
+        if (!round.getId().equals(roundId))
+            throw new BusinessException(ErrorInfo.ROUND_NOT_MATCHED);
 
         String key = "roomId:" + roomId + ":users";
         Map<String, PlayerInfo> data = redisUtil.getData(key, PlayerInfo.class);
 
-        PlayerInfo user = data.get(click.userId().toString());
-        PlayerInfo victim = data.get(click.victimId().toString());
-
+        PlayerInfo user = data.get(click.getUserId().toString());
+        PlayerInfo victim = data.get(click.getVictimId().toString());
+        if (user == null) {
+            throw new BusinessException(ErrorInfo.PLAYER_NOT_FOUND);
+        }
+        if (victim == null) {
+            throw new BusinessException(ErrorInfo.PLAYER_NOT_FOUND);
+        }
 
         if (isAlive(user) && isAlive(victim)) {
-            Round round = roundService.findById(click.roundId());
-
             victim.updateStamina(-1);
             redisUtil.saveData(key, victim.getUserId().toString(), victim);
 
-            roundFacade.sendBattleField(roomId, false);
-            roundFacade.sendDashBoard(roomId, round.getRoundNumber());
-
-            // 생존자 수 업데이트
-            String countKey = "aliveAndTotalPlayers";
-            Map<String, PlayerCount> playerCountMap = redisUtil.getData(countKey, PlayerCount.class);
-            PlayerCount playerCount = playerCountMap.get(roomId.toString());
-            playerCount.updateAliveCont();
-            redisUtil.saveData(countKey, roomId.toString(), playerCount);
-
             saveSuccessfulClick(click);
-            socketUtil.sendMessage("/games/" + roomId + "/kill-log", new KillLogResponse(click.roundId(), user.getNickname(), user.getColor(), victim.getNickname(), victim.getColor()));
+            --aliveCount;
 
             rankFacade.updateRankings(click, roomId);
-            rankFacade.sendRank(roomId);
 
-            countDown(60);
-
-            playerCountMap = redisUtil.getData(countKey, PlayerCount.class);
-            playerCount = playerCountMap.get(roundId.toString());
-
-            if (playerCount.getAliveCountA() > 1)
+            if (aliveCount > 1){
+                socketUtil.sendMessage("/games/" + roomId + "/kill-log", new KillLogResponse(click.getRoundId(), user.getNickname(), user.getColor(), victim.getNickname(), victim.getColor()));
+                roundFacade.sendBattleField(roomId, false);
+                roundFacade.sendDashBoard(roomId, round.getRoundNumber());
+                rankFacade.sendRank(roomId);
                 return;
+            }
+
+            System.out.println("종료 조건");
+            roundFacade.endRound(roomId, roundId);
+            System.out.println("플레이어 정리 완료");
+
+            roundFacade.sendResult(roomId, roundId, null, round1Id, round2Id, round3Id);
+            System.out.println("결과 반환 성공");
 
             if (round.getRoundNumber() == 3) {
-                sendResult(null);
-                roundFacade.endRound(roomId);
+                roundFacade.endGame(roomId);
                 stop();
             }
 
-            Round nextRound = roundFacade.startNextRound(round);
-            sendResult(nextRound.getId());
-
-            roundFacade.endRound(roomId);
-            updateRoundId(nextRound.getId());
-        }
-    }
-
-    private void sendResult(Long nextRoundId) {
-        String key = "roomId:" + roomId + ":users";
-        Round round = roundService.findById(roundId);
-
-        Map<String, RankInfo> ranks = redisUtil.getData("roomId:" + roomId + ":ranks", RankInfo.class);
-        Map<String, PlayerInfo> playersMap = redisUtil.getData(key, PlayerInfo.class);
-
-        List<RankInfo> sortedRanks = new ArrayList<>(ranks.values());
-        sortedRanks.sort((r1, r2) -> Integer.compare(r2.getKillCnt(), r1.getKillCnt()));
-
-        List<ResultResponse> results = new ArrayList<>();
-        int rank = 1;
-
-        for (RankInfo rankInfo : sortedRanks) {
-            Long userId = rankInfo.getUserId();
-            PlayerInfo player = playersMap.get(userId.toString());
-            if (player != null) {
-                ResultResponse result = new ResultResponse(
-                        userId,
-                        rank++,
-                        rankInfo.getKillCnt()
-                );
-                results.add(result);
+            //30초를
+            for (int sec = 30; sec >= 0; sec--) {
+                System.out.print(sec);
+                try {
+                    Thread.sleep(1000);
+                    socketUtil.sendMessage("/games/" + roomId + "/time", new TimeResponse(sec));
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
+
+            Round nextRound = roundFacade.startNextRound(round);
+            updateNextRound(nextRound.getId());
+
+            roundFacade.initializeGameStatuses(roomId, nextRound);
+            roundFacade.sendDashBoard(roomId, nextRound.getRoundNumber());
+            rankFacade.sendRank(roomId);
         }
 
-        socketUtil.sendMessage("/games/" + roomId + "/battle-field", new RoundEndResultResponse(true, round.getRoundNumber(), nextRoundId, results));
     }
 
     private void countDown(int sec) {
@@ -182,23 +165,30 @@ public class ClickEventProcessor implements Runnable {
         return user.getStamina() > 0;
     }
 
-    private void saveSuccessfulClick(clickVO click) {
+    private void saveSuccessfulClick(ClickDTO click) {
         String key = "roomId:" + roomId + ":availableClicks";
-
-        try {
-            String clickData = objectMapper.writeValueAsString(click);
-            redisUtil.saveToList(key, clickData);
-        } catch (Exception e) {
-            throw new RuntimeException("Error serializing clickVO", e);
-        }
+        redisUtil.saveToList(key, click);
     }
 
     public void stop() {
         running = false;
     }
 
-    private void updateRoundId(Long newRoundId) {
-        this.roundId = newRoundId;
-    }
+    private void updateNextRound(Long newRoundId) {
+        Round round = roundService.findById(roundId);
 
+        if (round.getRoundNumber() == 3)
+            return;
+
+        if (round.getRoundNumber() == 1) {
+            this.round2Id = newRoundId;
+        }
+
+        if (round.getRoundNumber() == 2) {
+            this.round3Id = newRoundId;
+        }
+        this.roundId = newRoundId;
+        this.aliveCount = playerCount;
+        lastProcessedIndex = 0;
+    }
 }

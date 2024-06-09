@@ -1,5 +1,7 @@
 export type GameTypes = {
   roundId: number;
+  nextRoundId: number;
+  roundNumber: number;
   roomName: string;
   hostName: string;
   comment: string;
@@ -18,8 +20,17 @@ export type PlayersTypes = {
   isHost: boolean;
 };
 
-export type ResultTypes = {
-  isFinished: boolean;
-  roundNumber: number;
-  rank: number;
+export type KillLogPlayersTypes = {
+  roundId: number;
+  userNickname: string;
+  color: string;
+  victimNickName: string;
+  victimColor: string;
+};
+
+export type RankPlayersTypes = {
+  userId: number;
+  nickname: string;
+  color: string;
+  killCnt: number;
 };

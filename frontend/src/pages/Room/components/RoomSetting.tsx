@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import useGameStore from '../../../store/gameStore';
 
 import styled from 'styled-components';
@@ -13,10 +14,16 @@ const TextBlock = styled(FlexLayout)`
 
 export default function RoomSetting() {
   const { gameData, setGameData } = useGameStore();
+  const [warn, setWarn] = useState(false);
 
   const handleChange = (e: { target: { name: string; value: string } }) => {
     const { name, value } = e.target;
-    setGameData({ ...gameData, [name]: value });
+    if (value.length > 15) {
+      setWarn(true);
+    } else {
+      setWarn(false);
+      setGameData({ ...gameData, [name]: value });
+    }
   };
 
   return (
@@ -37,7 +44,10 @@ export default function RoomSetting() {
           </FlexLayout>
           <FlexLayout gap='1rem'>
             <SmallText color='black'>{`>> 도발 멘트:`}</SmallText>
-            <Input name={`comment`} width='52rem' onChange={handleChange} />
+            <Input name={`comment`} width='38rem' onChange={handleChange} />
+            <SmallText
+              color={warn ? '#e84b4b' : 'black'}
+            >{`(15자 이내)`}</SmallText>
           </FlexLayout>
         </TextBlock>
       </TextBlock>

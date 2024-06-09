@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import SockJS from 'sockjs-client';
 import { CompatClient, Stomp } from '@stomp/stompjs';
 
@@ -13,7 +14,6 @@ import WhiteBox from './WhiteBox';
 import GrayTitleBox from './GrayTitleBox';
 import Input from './Input';
 import Button from './Button';
-import { useParams } from 'react-router-dom';
 
 const ChatBlock = styled.div<{ height: string }>`
   width: 32rem;
@@ -54,10 +54,12 @@ export default function ChatBox({ mode, isShort, text }: ChatBoxProps) {
   const [userChatting, setUserChatting] = useState<string[][]>(
     chattingData ? JSON.parse(chattingData) : []
   );
+  const [reset, setReset] = useState(false);
   const clientRef = useRef<CompatClient | null>(null);
+  const messageEndRef = useRef<HTMLDivElement | null>(null);
 
   let url: string;
-  const id = useParams();
+  const { id } = useParams();
   const changeMode = () => {
     if (storage.getItem('mode') !== mode) {
       storage.removeItem('chattingData');
@@ -78,12 +80,13 @@ export default function ChatBox({ mode, isShort, text }: ChatBoxProps) {
   };
 
   const handleClick = () => {
-    const message = JSON.stringify({
-      text: chatting,
-      nickname: userData.nickname,
+    const chat = JSON.stringify({
+      message: chatting,
+      sender: userData.nickname,
       color: userData.color,
     });
-    clientRef.current?.send(`/topic/${url}`, header, message);
+    clientRef.current?.send(`/app/${url}`, header, chat);
+    setReset(true);
   };
 
   const connectChatHandler = () => {
@@ -97,7 +100,7 @@ export default function ChatBox({ mode, isShort, text }: ChatBoxProps) {
           setUserChatting((prevChatting) => {
             const newChatting = [
               ...prevChatting,
-              [fetchedData.color, fetchedData.nickname, fetchedData.text],
+              [fetchedData.color, fetchedData.sender, fetchedData.message],
             ];
             return newChatting;
           });
@@ -109,10 +112,12 @@ export default function ChatBox({ mode, isShort, text }: ChatBoxProps) {
 
   useEffect(() => {
     storage.setItem('chattingData', JSON.stringify(userChatting));
+    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userChatting]);
 
   useEffect(() => {
+    setUserChatting([]);
     connectChatHandler();
     return () => {
       clientRef.current?.disconnect(() => {
@@ -122,22 +127,34 @@ export default function ChatBox({ mode, isShort, text }: ChatBoxProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (reset) {
+      setReset(false);
+    }
+  }, [reset]);
+
   return (
     <WhiteBox mode={isShort ? 'MEDIUM' : 'TALL'} width='32rem'>
       <GrayTitleBox text={text} />
       <ChatBlock height={isShort ? '15.2rem' : '45.2rem'}>
         {userChatting.map((value, index) => {
-          const [color, nickname, text] = value;
+          const [color, sender, message] = value;
           return (
             <ChatLine key={index}>
-              <ChatText color={color}>{nickname}</ChatText>
-              <ChatText>{`: ${text}`}</ChatText>
+              <ChatText color={color}>{sender}</ChatText>
+              <ChatText>{`: ${message}`}</ChatText>
             </ChatLine>
           );
         })}
+        <div ref={messageEndRef}></div>
       </ChatBlock>
       <FlexLayout gap='1rem'>
-        <Input name='chatting' onChange={handleChange} />
+        <Input
+          name='chatting'
+          reset={reset}
+          onChange={handleChange}
+          handleKeyDown={handleClick}
+        />
         <Button label={`전송`} onClick={handleClick} />
       </FlexLayout>
     </WhiteBox>

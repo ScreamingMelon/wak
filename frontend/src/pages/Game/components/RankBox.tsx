@@ -1,7 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { CompatClient } from '@stomp/stompjs';
-import { getAccessToken } from '../../../constants/api';
-import useGameStore from '../../../store/gameStore';
+import { RankPlayersTypes } from '../../../types/GameTypes';
 
 import styled from 'styled-components';
 import { GridLayout } from '../../../styles/layout';
@@ -37,63 +34,26 @@ const RankingBlock = styled.div`
   gap: 1rem;
 `;
 
-type RankPlayersTypes = {
-  userId: number;
-  nickname: string;
-  color: string;
-  killCnt: number;
-};
+type RankBoxProps = { ranks: RankPlayersTypes[] };
 
-type RankBoxProps = { client: CompatClient };
-
-export default function RankBox({ client }: RankBoxProps) {
-  const ACCESS_TOKEN = getAccessToken();
-  const header = {
-    Authorization: `Bearer ${ACCESS_TOKEN}`,
-    'Content-Type': 'application/json',
-  };
-  const { gameData } = useGameStore();
-  const [ranks, setRanks] = useState<RankPlayersTypes[]>([]);
-  const subscribedRef = useRef(false);
-
-  const subscribeToTopic = () => {
-    if (!subscribedRef.current) {
-      client.subscribe(
-        `/topic/games/${gameData.roundId}/rank`,
-        (message) => {
-          console.log(JSON.parse(message.body).ranks);
-          setRanks([...JSON.parse(message.body).ranks]);
-        },
-        header
-      );
-      subscribedRef.current = true;
-    }
-  };
-
-  useEffect(() => {
-    if (client && client.connected) {
-      subscribeToTopic();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client]);
-
+export default function RankBox({ ranks }: RankBoxProps) {
   const RankText = (
-    first: string,
-    second: string,
-    third: string,
+    ranking: string,
+    nickname: string,
+    killCount: string,
     color?: string,
     key?: number
   ) => {
     return (
       <RankLayout key={key} $col={4} gap='0.4rem'>
         <GridSpan $col={1} $align={`start`}>
-          {first}
+          {ranking}
         </GridSpan>
         <GridSpan color={color} $col={2} $align={`center`}>
-          {second}
+          {nickname}
         </GridSpan>
         <GridSpan $col={1} $align={`end`}>
-          {third}
+          {killCount}
         </GridSpan>
       </RankLayout>
     );
@@ -102,15 +62,15 @@ export default function RankBox({ client }: RankBoxProps) {
   return (
     <WhiteBox mode='MEDIUM' width='32rem'>
       <GrayTitleBox text={`랭킹`} />
-      {RankText('등수', '닉네임', '킬수')}
+      {RankText(`순위`, `닉네임`, `킬수`)}
       <HorizontalLine />
       <RankingBlock>
-        {ranks.map((value, index) => {
+        {ranks.map((rank, index) => {
           return RankText(
-            `${index + 1}등`,
-            value.nickname,
-            `${value.killCnt}킬`,
-            value.color,
+            `${index + 1}위`,
+            rank.nickname,
+            `${rank.killCnt}킬`,
+            rank.color,
             index
           );
         })}

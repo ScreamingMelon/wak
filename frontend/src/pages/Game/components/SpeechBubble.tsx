@@ -1,4 +1,6 @@
-import useGameStore from '../../../store/gameStore';
+import { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getMention } from '../../../services/game';
 
 import styled from 'styled-components';
 import { FlexLayout } from '../../../styles/layout';
@@ -23,18 +25,41 @@ const Text = styled.div`
 `;
 
 type SpeechBubbleProps = {
-  isWaiting?: boolean;
+  comment: {
+    sender: string;
+    color: string;
+    mention: string;
+  };
 };
 
-export default function SpeechBubble({ isWaiting }: SpeechBubbleProps) {
-  const { hostName, comment } = useGameStore().gameData;
+export default function SpeechBubble({ comment }: SpeechBubbleProps) {
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  const showMention = async () => {
+    try {
+      id && (await getMention(parseInt(id)));
+    } catch (error: any) {
+      console.error('도발 멘트 요청 에러', error);
+      navigate('/error', { replace: true });
+    }
+  };
+
+  useEffect(() => {
+    showMention();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   return (
     <SpeechBubbleBlock $isCol gap='1rem'>
-      <SmallText color='black'>{`방장의 한마디!`}</SmallText>
+      <SmallText color='black'>{`도발 멘트!`}</SmallText>
       <FlexLayout>
-        <Text color='#725bff'>{isWaiting ? hostName : `김라쿤`}</Text>
-        <Text color='black'>{isWaiting ? comment : `: 바보들아 ~`}</Text>
+        <Text color={comment.color}>{comment.sender}</Text>
+        <Text color='black'>
+          {comment.mention === ''
+            ? `(멘트를 입력하지 않았습니다)`
+            : `: ${comment.mention}`}
+        </Text>
       </FlexLayout>
     </SpeechBubbleBlock>
   );

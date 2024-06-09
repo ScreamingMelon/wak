@@ -5,6 +5,7 @@ import StartPage from '../pages/Start/Start';
 import LobbyPage from '../pages/Lobby/Lobby';
 import RoomPage from '../pages/Room/Room';
 import GamePage from '../pages/Game/Game';
+import NotFound from './NotFound';
 
 const Layout = styled.div`
   width: 100dvw;
@@ -19,7 +20,7 @@ export default function Main() {
         <Route path='/lobby' element={<LobbyPage />} />
         <Route path='/room/:id' element={<RoomPage />} />
         <Route path='/game/:id' element={<GamePage />} />
-        <Route path='*' element={<div>404</div>} />
+        <Route path='*' element={<NotFound />} />
       </Routes>
     </Layout>
   );

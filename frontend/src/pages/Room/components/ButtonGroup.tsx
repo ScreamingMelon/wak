@@ -3,7 +3,6 @@ import { exitRoom } from '../../../services/room';
 import { startGame } from '../../../services/game';
 import useRoomStore from '../../../store/roomStore';
 import useGameStore from '../../../store/gameStore';
-import { PlayerTypes } from '../../../types/RoomTypes';
 
 import styled from 'styled-components';
 import { FlexLayout } from '../../../styles/layout';
@@ -17,7 +16,10 @@ type ButtonGroupProps = {
   isHost: boolean;
   canStart: boolean;
   usersNumber: number;
-  openDialog: () => void;
+  openDialog: {
+    startCheck: () => void;
+    gameRules: () => void;
+  };
 };
 
 export default function ButtonGroup({
@@ -30,6 +32,10 @@ export default function ButtonGroup({
   const { id } = useParams();
   const { roomData } = useRoomStore();
   const { gameData, setGameData } = useGameStore();
+
+  const handleRules = () => {
+    openDialog.gameRules();
+  };
 
   const handleStart = async () => {
     if (canStart) {
@@ -49,10 +55,10 @@ export default function ButtonGroup({
         });
       } catch (error: any) {
         console.error('게임 시작 에러', error);
-        navigate(`/error`);
+        navigate('/error', { replace: true });
       }
     } else {
-      openDialog();
+      openDialog.startCheck();
     }
   };
 
@@ -61,7 +67,7 @@ export default function ButtonGroup({
       id && (await exitRoom(parseInt(id)));
     } catch (error: any) {
       console.error('방 나가기 에러', error);
-      navigate(`/error`);
+      navigate('/error', { replace: true });
     }
 
     navigate(`/lobby`, { replace: true });
@@ -69,7 +75,7 @@ export default function ButtonGroup({
 
   return (
     <Layout gap='2rem'>
-      <RoundButton color='purple' label={`게임 방법`} />
+      <RoundButton color='purple' label={`게임 방법`} onClick={handleRules} />
       {isHost && (
         <RoundButton color='blue' label={`게임 시작`} onClick={handleStart} />
       )}

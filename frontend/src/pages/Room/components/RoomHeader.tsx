@@ -1,5 +1,8 @@
-import styled from 'styled-components';
-import { RegularText, SmallText } from '../../../styles/fonts';
+import styled, { keyframes } from 'styled-components';
+import {
+  RegularText,
+  SmallText as OriginalSmallText,
+} from '../../../styles/fonts';
 
 const HeaderBlock = styled.div`
   place-self: stretch;
@@ -16,12 +19,40 @@ const TextBlock = styled.div`
 
 const StateBlock = styled.div`
   display: flex;
+  align-items: center;
+  gap: 1.2rem;
+`;
+
+const coffeeAnimation = keyframes`
+  0% { content: url(${require('../../../assets/img-coffee1.png')}); }
+  50% { content: url(${require('../../../assets/img-coffee2.png')}); }
+  100% { content: url(${require('../../../assets/img-coffee1.png')}); }
+`;
+
+const CoffeeImg = styled.div`
+  width: 4rem;
+  height: fit-content;
+  animation: ${coffeeAnimation} 1s infinite;
 `;
 
 const LockImg = styled.img.attrs({
   alt: '자물쇠',
 })`
   width: 3.2rem;
+`;
+
+const dotsAnimation = keyframes`
+  0% { content: ''; }
+  33% { content: '.'; }
+  66% { content: '..'; }
+  100% { content: '...'; }
+`;
+
+const SmallText = styled(OriginalSmallText)`
+  &::after {
+    content: '...';
+    animation: ${dotsAnimation} 2s steps(4, end) infinite;
+  }
 `;
 
 type RoomHeaderProps = {
@@ -44,8 +75,8 @@ export default function RoomHeader({
       <TextBlock>
         {!isHost && (
           <StateBlock>
-            {/* 이미지 */}
-            <SmallText>{`방장이 게임을 시작하기를 기다리는 중입니다 ...`}</SmallText>
+            <CoffeeImg />
+            <SmallText>{`방장이 게임을 시작하기를 기다리는 중입니다`}</SmallText>
           </StateBlock>
         )}
         <RegularText>{`현재 방 이름 : ${roomName}`}</RegularText>

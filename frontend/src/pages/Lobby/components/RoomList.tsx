@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getRoomlist } from '../../../services/room';
 import { RoomListTypes } from '../../../types/RoomTypes';
+import useUserStore from '../../../store/userStore';
 
 import styled, { css } from 'styled-components';
 import { FlexLayout, GridLayout } from '../../../styles/layout';
 import { LargeText, SmallText, textStyles } from '../../../styles/fonts';
-
 import WhiteRoundBox from '../../../components/WhiteRoundBox';
 
 import arrow from '../../../assets/img-arrow.png';
@@ -65,7 +65,7 @@ export default function RoomList({ openDialog }: RoomListProps) {
   const navigate = useNavigate();
   const ROOM_NUM_SINGLE_PAGE = 6;
   const roomBlocks = Array.from({ length: ROOM_NUM_SINGLE_PAGE });
-
+  const { token } = useUserStore().userData;
   const [roomPage, setRoomPage] = useState<{
     totalPage: number;
     rooms: RoomListTypes[];
@@ -81,8 +81,12 @@ export default function RoomList({ openDialog }: RoomListProps) {
       const fetchedData = await getRoomlist();
       setRoomPage(fetchedData.data);
     } catch (error: any) {
-      console.error('방 목록 가져오기 에러', error);
-      navigate(`/error`);
+      if (token === null) {
+        navigate('/', { replace: true });
+      } else {
+        console.error('방 목록 가져오기 에러', error);
+        navigate('/error', { replace: true });
+      }
     }
   };
 
